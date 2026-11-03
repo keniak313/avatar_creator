@@ -1,12 +1,20 @@
 import { OrbitControls, PerspectiveCamera, useGLTF } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
+import { useGraph, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { Vector3 } from "three";
+import { useAvatar } from "../stores/useAvatar";
 
-export default function Scene({ variations, setVariations }) {
+export default function Scene() {
   const { camera } = useThree();
   const { scene } = useGLTF("/3d/avatar.glb");
-  const camRef = useRef(null);
+
+  const customizations = useAvatar((state) => state.customizations);
+  const updateItems = useAvatar((state) => state.updateItems);
+
+  const eyesActive = useAvatar((state) => state.customizations.eyes.active);
+  const hairActive = useAvatar((state) => state.customizations.hair.active);
+  const bodyItems = useAvatar((state) => state.customizations.body.items);
+
   useEffect(() => {
     if (!camera) return;
     // camera.lookAt(0, 0.9, 0);
@@ -15,56 +23,100 @@ export default function Scene({ variations, setVariations }) {
     camera.updateProjectionMatrix();
   }, [camera]);
 
-  const { clone, customizations } = useMemo(() => {
-    const clone = scene.clone();
+  const { foundCustomizations, avatarBody } = useMemo(() => {
+    let foundCustomizations = {
+      eyes: [],
+      hair: [],
+      body: [],
+    };
 
-    let customizations = { eyes: [], hair: [] };
+    let avatarBody;
 
-    clone.traverse((node) => {
+    scene.traverse((node) => {
       if (node.name === "eyes") {
-        customizations.eyes = node.children;
+        foundCustomizations.eyes = node.children;
       }
       if (node.name === "hair") {
-        customizations.hair = node.children;
+        foundCustomizations.hair = node.children;
+      }
+
+      if (node.name === "body") {
+        Object.entries(node.morphTargetDictionary).map(([name, value]) => {
+          foundCustomizations.body.push({
+            name: name,
+            id: value,
+            value: node.morphTargetInfluences[value],
+          });
+        });
+
+        avatarBody = node;
       }
     });
 
     return {
-      clone,
-      customizations,
+      foundCustomizations,
+      avatarBody,
     };
   }, [scene]);
 
+  // INIT CUSTOMIZATIONS
   useEffect(() => {
-    setVariations((prev) => {
-      const updated = { ...prev };
+    if (foundCustomizations.eyes.length > 0 && !customizations.eyes.items) {
+      const eyes = [];
+      foundCustomizations.eyes.forEach((node, index) => {
+        eyes.push({ name: node.name, id: node.uuid, index });
+      });
 
-      if (customizations.eyes.length > 0) {
-        updated.eyes.items = customizations.eyes;
-      }
+      updateItems("eyes", eyes);
+    }
 
-      if (customizations.hair.length > 0) {
-        updated.hair.items = customizations.hair;
-      }
+    if (foundCustomizations.hair.length > 0 && !customizations.hair.items) {
+      const hair = [];
+      foundCustomizations.hair.forEach((node, index) => {
+        hair.push({ name: node.name, id: node.uuid, index });
+      });
 
-      return updated;
-    });
-  }, [customizations]);
+      updateItems("hair", hair);
+    }
 
+    if (foundCustomizations.body.length > 0 && !customizations.body.items) {
+      updateItems("body", foundCustomizations.body);
+    }
+  }, [foundCustomizations]);
+
+  // UPDATE ITEMS VISIBILITY ON MESH
   useEffect(() => {
-    customizations.hair.forEach((hair, index) => {
-      hair.visible = index === variations.hair.active;
-    });
+    if (!foundCustomizations) return;
 
-    customizations.eyes.forEach((eyes, index) => {
-      eyes.visible = index === variations.eyes.active;
+    if (foundCustomizations.eyes) {
+      foundCustomizations.eyes.forEach((item, index) => {
+        item.visible = eyesActive === index;
+      });
+    }
+
+    if (foundCustomizations.hair) {
+      foundCustomizations.hair.forEach((item, index) => {
+        item.visible = hairActive === index;
+      });
+    }
+  }, [foundCustomizations, eyesActive, hairActive]);
+
+  //UPDATE MORPHS
+  useEffect(() => {
+    if (!avatarBody || !bodyItems) return;
+    console.log("MORPHS UPDATE");
+    bodyItems.forEach((item) => {
+      if (avatarBody.morphTargetInfluences[item.id] !== undefined) {
+        avatarBody.morphTargetInfluences[item.id] = item.value;
+      }
+      avatarBody.morphTargetInfluences[item.id] = item.value;
     });
-  }, [variations]);
+  }, [avatarBody, bodyItems]);
 
   return (
     <group>
       <OrbitControls target={[0, 0.9, 0]} />
-      <primitive object={clone}></primitive>
+      <primitive object={scene}></primitive>
     </group>
   );
 }

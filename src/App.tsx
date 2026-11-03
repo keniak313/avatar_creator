@@ -1,16 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Canvas3D from "./components/Canvas3D";
 import Scene from "./components/Scene3D";
 import { createPortal } from "react-dom";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { useAvatar } from "./stores/useAvatar";
+import SideBar from "./components/SideBar";
 
 function App() {
-  const [variations, setVariations] = useState({
-    eyes: { name: "eyes", active: 0, visible: false, items: [] },
-    hair: { name: "hair", active: 0, visible: false, items: [] },
-  });
-
   const [visibleOptions, setVisibleOptions] = useState(null);
 
   const [sideBarVisible, setSideBarVisible] = useState(false);
@@ -29,7 +26,9 @@ function App() {
   // );
   return (
     <section className="w-screen h-screen bg-amber-300 flex relative">
-      <div className="absolute top-0 left-0 h-full w-50 z-100 flex flex-col">
+      <SideBar />
+
+      {/* <div className="absolute top-0 left-0 h-full w-50 z-100 flex flex-col">
         <div className="z-2 pl-2">
           <button
             className="cursor-pointer "
@@ -76,23 +75,43 @@ function App() {
                       <div
                         className={`${visibleOptions === variation.name ? "" : "hidden"} flex flex-col gap-2`}
                       >
-                        {variation.items.map((item, index) => (
-                          <button
-                            key={item.name}
-                            className={`item-${variation.name} ${index === variation.active ? "bg-amber-300" : ""} cursor-pointer`}
-                            onClick={() => {
-                              setVariations((prev) => ({
-                                ...prev,
-                                [variation.name]: {
-                                  ...prev[variation.name],
-                                  active: index,
-                                },
-                              }));
-                            }}
-                          >
-                            {item.name}
-                          </button>
-                        ))}
+                        {variation.name !== "body" &&
+                          variation.items?.map((item, index) => {
+                            return (
+                              <button
+                                key={item.name}
+                                className={`item-${variation.name} ${index === variation.active ? "bg-amber-300" : ""} cursor-pointer`}
+                                onClick={() => {
+                                  setVariations((prev) => ({
+                                    ...prev,
+                                    [variation.name]: {
+                                      ...prev[variation.name],
+                                      active: index,
+                                    },
+                                  }));
+                                }}
+                              >
+                                {item.name}
+                              </button>
+                            );
+                          })}
+                        {variation.name === "body" &&
+                          variation.morphs?.map((item) => {
+                            return (
+                              <label className={`item-${variation.name}`}>
+                                {item.name}
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="1"
+                                  value={item.val}
+                                  onChange={() => {
+                                    console.log("XX");
+                                  }}
+                                />
+                              </label>
+                            );
+                          })}
                       </div>,
                       itemsHolderRef.current,
                     )}
@@ -103,10 +122,10 @@ function App() {
           </div>
           <div ref={itemsHolderRef}></div>
         </div>
-      </div>
+      </div> */}
       <div className="flex-1">
         <Canvas3D>
-          <Scene variations={variations} setVariations={setVariations} />
+          <Scene />
         </Canvas3D>
       </div>
     </section>
