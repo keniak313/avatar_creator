@@ -1,6 +1,41 @@
 import { create } from "zustand";
 
-export const useAvatar = create((set) => ({
+interface Items {
+  name: string;
+  id: number;
+  index: number;
+}
+
+interface MorphsItems {
+  name: string;
+  id: number;
+  value: number;
+}
+interface Customizations {
+  id: number;
+  name: string;
+  active: number;
+  items?: Items[];
+}
+
+interface AvatarState {
+  customizations: {
+    eyes: Customizations;
+    hair: Customizations;
+    body: {
+      id: number;
+      name: string;
+      items?: MorphsItems[];
+    };
+  };
+  activeCategory?: string;
+  updateItems: (category: string, newItems: Items[]) => void;
+  setActiveCategory: (category: string) => void;
+  updateItemValue: (category: string, itemId: number, newValue: number) => void;
+  setActiveItem: (category: string, index: number) => void;
+}
+
+export const useAvatar = create<AvatarState>((set) => ({
   customizations: {
     eyes: { id: 0, name: "eyes", active: 0, items: null },
     hair: { id: 1, name: "hair", active: 0, items: null },
@@ -8,8 +43,7 @@ export const useAvatar = create((set) => ({
   },
   activeCategory: null,
 
-  setActiveCategory: (category) =>
-    set((state) => ({ activeCategory: category })),
+  setActiveCategory: (category) => set(() => ({ activeCategory: category })),
   setActiveItem: (category, index) =>
     set((state) => ({
       customizations: {
