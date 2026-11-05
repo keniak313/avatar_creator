@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface Items {
   name: string;
@@ -35,43 +36,51 @@ interface AvatarState {
   setActiveItem: (category: string, index: number) => void;
 }
 
-export const useAvatar = create<AvatarState>((set) => ({
-  customizations: {
-    eyes: { id: 0, name: "eyes", active: 0, items: null },
-    hair: { id: 1, name: "hair", active: 0, items: null },
-    body: { id: 2, name: "body", items: null },
-  },
-  activeCategory: null,
+//persist - saves to local storage
 
-  setActiveCategory: (category) => set(() => ({ activeCategory: category })),
-  setActiveItem: (category, index) =>
-    set((state) => ({
+export const useAvatar = create<AvatarState>()(
+  persist(
+    (set) => ({
       customizations: {
-        ...state.customizations,
-        [category]: { ...state.customizations[category], active: index },
+        eyes: { id: 0, name: "eyes", active: 0, items: null },
+        hair: { id: 1, name: "hair", active: 0, items: null },
+        body: { id: 2, name: "body", items: null },
       },
-    })),
-  updateItemValue: (category, itemId, newValue) =>
-    set((state) => {
-      const currentCategory = state.customizations[category];
-      if (!currentCategory || !currentCategory.items) return state;
-      return {
-        customizations: {
-          ...state.customizations,
-          [category]: {
-            ...currentCategory,
-            items: currentCategory.items.map((item) =>
-              item.id === itemId ? { ...item, value: newValue } : item,
-            ),
+      activeCategory: null,
+
+      setActiveCategory: (category) =>
+        set(() => ({ activeCategory: category })),
+      setActiveItem: (category, index) =>
+        set((state) => ({
+          customizations: {
+            ...state.customizations,
+            [category]: { ...state.customizations[category], active: index },
           },
-        },
-      };
+        })),
+      updateItemValue: (category, itemId, newValue) =>
+        set((state) => {
+          const currentCategory = state.customizations[category];
+          if (!currentCategory || !currentCategory.items) return state;
+          return {
+            customizations: {
+              ...state.customizations,
+              [category]: {
+                ...currentCategory,
+                items: currentCategory.items.map((item) =>
+                  item.id === itemId ? { ...item, value: newValue } : item,
+                ),
+              },
+            },
+          };
+        }),
+      updateItems: (category, newItems) =>
+        set((state) => ({
+          customizations: {
+            ...state.customizations,
+            [category]: { ...state.customizations[category], items: newItems },
+          },
+        })),
     }),
-  updateItems: (category, newItems) =>
-    set((state) => ({
-      customizations: {
-        ...state.customizations,
-        [category]: { ...state.customizations[category], items: newItems },
-      },
-    })),
-}));
+    { name: "avatar-storage" },
+  ),
+);
