@@ -1,12 +1,23 @@
 import gsap from "gsap";
 import { useAvatar } from "../stores/useAvatar";
+import { useShallow } from "zustand/shallow";
 
 export default function SideBar() {
-  const customizations = useAvatar((state) => state.customizations);
-  const activeCategory = useAvatar((state) => state.activeCategory);
-  const setActiveCategory = useAvatar((state) => state.setActiveCategory);
-  const setActiveItem = useAvatar((state) => state.setActiveItem);
-  const updateItemValue = useAvatar((state) => state.updateItemValue);
+  const {
+    customizations,
+    activeCategory,
+    setActiveCategory,
+    setActiveItem,
+    updateItemValue,
+  } = useAvatar(
+    useShallow((state) => ({
+      customizations: state.customizations,
+      activeCategory: state.activeCategory,
+      setActiveCategory: state.setActiveCategory,
+      setActiveItem: state.setActiveItem,
+      updateItemValue: state.updateItemValue,
+    })),
+  );
 
   return (
     <div className="absolute top-0 left-0 h-full w-50 z-100 flex flex-col bg-white">

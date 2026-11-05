@@ -3,17 +3,32 @@ import { useGraph, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { Vector3 } from "three";
 import { useAvatar } from "../stores/useAvatar";
+import { useShallow } from "zustand/shallow";
 
 export default function Scene() {
   const { camera } = useThree();
   const { scene } = useGLTF("/3d/avatar.glb");
 
-  const customizations = useAvatar((state) => state.customizations);
-  const updateItems = useAvatar((state) => state.updateItems);
+  const {
+    eyesActive,
+    hairActive,
+    eyeItems,
+    hairItems,
+    bodyItems,
+    updateItems,
+  } = useAvatar(
+    useShallow((state) => ({
+      eyesActive: state.customizations.eyes.active,
+      hairActive: state.customizations.hair.active,
+      eyeItems: state.customizations.eyes.items,
+      hairItems: state.customizations.hair.items,
+      bodyItems: state.customizations.body.items,
+      updateItems: state.updateItems,
+    })),
+  );
 
-  const eyesActive = useAvatar((state) => state.customizations.eyes.active);
-  const hairActive = useAvatar((state) => state.customizations.hair.active);
-  const bodyItems = useAvatar((state) => state.customizations.body.items);
+  // Przepisac powyzsze na useShallow dla optymalizacji - jesli chcemy pobrac konretkne elementy objektu
+  // np. const {eyesActive, hairActive} = useAvatar(useShallow((state) => ({eyesActive: state.customizations.eyes.active})))
 
   useEffect(() => {
     if (!camera) return;
@@ -61,7 +76,7 @@ export default function Scene() {
 
   // INIT CUSTOMIZATIONS
   useEffect(() => {
-    if (foundCustomizations.eyes.length > 0 && !customizations.eyes.items) {
+    if (foundCustomizations.eyes.length > 0 && !eyeItems) {
       const eyes = [];
       foundCustomizations.eyes.forEach((node, index) => {
         eyes.push({ name: node.name, id: node.uuid, index });
@@ -70,7 +85,7 @@ export default function Scene() {
       updateItems("eyes", eyes);
     }
 
-    if (foundCustomizations.hair.length > 0 && !customizations.hair.items) {
+    if (foundCustomizations.hair.length > 0 && !hairItems) {
       const hair = [];
       foundCustomizations.hair.forEach((node, index) => {
         hair.push({ name: node.name, id: node.uuid, index });
@@ -79,7 +94,7 @@ export default function Scene() {
       updateItems("hair", hair);
     }
 
-    if (foundCustomizations.body.length > 0 && !customizations.body.items) {
+    if (foundCustomizations.body.length > 0 && !bodyItems) {
       updateItems("body", foundCustomizations.body);
     }
   }, [foundCustomizations]);
